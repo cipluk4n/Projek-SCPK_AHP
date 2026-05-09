@@ -1,1 +1,0 @@
-# Projek-SCPK_AHP
