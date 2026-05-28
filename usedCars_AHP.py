@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -50,7 +51,7 @@ menu = st.sidebar.selectbox("Pilih halaman:", ["Data Mobil Bekas", "Perhitungan 
 
 if menu == "Data Mobil Bekas":
     st.header("Dataset Mobil Bekas")
-    st.text("Dataset mentah 'used_cars.csv:")
+    st.write("Dataset mentah **used_cars.csv**:")
     st.info(f"Total data yang tersedia: {len(df_raw)} baris dan {len(df_raw.columns)} kolom.")
     st.dataframe(df_raw, use_container_width=True)
 
@@ -118,7 +119,7 @@ elif menu == "Perhitungan AHP":
         )
 
         #Menampilkan tabel hasil akhir yg di sorting (tertinggi - terendah)
-        st.write("### Hasil Akhir Rekomendasi Mobil Bekas Terbaik")
+        st.write("### Tabel Hasil Akhir Rekomendasi Mobil Bekas Terbaik")
         df_hasil = df_proses[['brand', 'model', 'model_year', 'milage', 'accident', 'clean_title', 'price', 'Skor_AHP']]
         df_hasil_sorted = df_hasil.sort_values(by='Skor_AHP', ascending=False).reset_index(drop=True)
         #Tambah kolom ranking
@@ -126,7 +127,19 @@ elif menu == "Perhitungan AHP":
         df_hasil_sorted.index.name = 'Rank'
 
         st.dataframe(df_hasil_sorted, use_container_width=True)
-     
+        #Grafik hasil
+        st.write("### Grafik Hasil Akhir Rekomendasi Mobil Bekas Terbaik")
+        df_top10 = df_hasil_sorted.head(10).copy()
+        df_top10['Label_X'] = [f"#{i} {b} {m}" for i, b, m in zip(range(1, 11), df_top10['brand'], df_top10['model'])]
+        fig, ax = plt.subplots(figsize=(10, 6))
+        batang = ax.bar(df_top10['Label_X'], df_top10['Skor_AHP'], color='skyblue', edgecolor='black')
+        ax.set_ylim(df_top10['Skor_AHP'].min() - 0.02, df_top10['Skor_AHP'].max() + 0.01)
+        ax.set(ylabel='Skor Akhir AHP', title='Top 10 Mobil Berdasarkan Skor AHP Terbaik')
+        # teks miring
+        ax.set_xticklabels(df_top10['Label_X'], rotation=45, ha='right')        
+        ax.bar_label(batang, fmt='%.3f', padding=3, fontsize=9)        
+        plt.tight_layout()
+        st.pyplot(fig)
 
 elif menu == "Profil Kelompok":
     st.header("Profil Kelompok")
