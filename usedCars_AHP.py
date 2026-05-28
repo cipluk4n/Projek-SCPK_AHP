@@ -141,14 +141,3 @@ elif menu == "Profil Kelompok":
             st.text("123240028")
             st.text("123240099")
 
-    #TODO: buat matriks perbandingan antar kriteria
-    #TODO: normalisasi matriks perbandigan
-    #TODO: mencari bobot baris kriteria (rata-rata dari setiap baris matriks)
-    #TODO: mencari CV (perkalian matriks antara matriks perbandingan awal dengan matriks bobot baris kriteria)
-    #TODO: menghitung nilai eigen (rata-rata CV)
-    #TODO: menghitung nilai CI: (nilai eigen-jumlahKriteria)/(jumlahKriteria-1)
-    #TODO: menghitung nilai CR: CI/RI, RI(random index) didapat dari standar ketetapan nilai RI
-    #TODO: decision (apakah nilai CR <=0.1) jika iya berarti konsisten dan valid dipakai
-    #TODO: rekap bobot alternatif
-    #TODO: perhitungan bobot akhir (perkalian matriks rekap bobot alternatif dengan bobot baris kriteria)
-    #TODO: perangkingan (dari yang paling baik)
