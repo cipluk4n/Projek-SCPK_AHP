@@ -66,7 +66,7 @@ elif menu == "Perhitungan AHP":
         w_accident = st.slider("Accident (Riwayat Kecelakaan) - Benefit", 1, 9, value=7)
         w_price = st.slider("Harga Mobil (Price) - Cost", 1, 9, value=8)
     with col3:
-        w_title = st.slider("Clean Title (Status Surat Kelengkapan)) - Benefit", 1, 9, value=6)
+        w_title = st.slider("Clean Title (Surat Kepemilikan Bersih)) - Benefit", 1, 9, value=6)
 
     st.divider()
     max_baris = st.number_input("Batasi jumlalh baris data yang dihitung: ", min_value=10, max_value=len(df_clean), value=500)
