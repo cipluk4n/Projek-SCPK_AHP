@@ -2,13 +2,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
+import time
+
 
 st.set_page_config(page_icon='🗿', page_title='SPK Mobil Bekas | AHP', layout='wide')
 st.title('Pemilihan Mobil Bekas dengan Metode AHP', text_alignment='center')
 st.divider()
 
 #[ (Pembersihan Data ) ]
-
 if 'df_raw' not in st.session_state:
     try:
         df = pd.read_csv('used_cars.csv')
@@ -53,7 +54,8 @@ df_clean = get_cleaned_data()
 
 #[ (SIDEBAR) ]
 st.sidebar.title('Menu Utama')
-menu = st.sidebar.selectbox('Pilih halaman:', ['Data Mobil Bekas', 'AHP | Pairwise Comparison', 'AHP | Absolute Measurement', 'CRUD', 'Profil Kelompok'])
+# menu = st.sidebar.selectbox('Pilih halaman:', ['Data Mobil Bekas', 'CRUD','AHP | Pairwise Comparison', 'AHP | Absolute Measurement', 'Profil Kelompok'])
+menu = st.sidebar.selectbox('Pilih halaman:', ['Data Mobil Bekas', 'CRUD', 'AHP | Absolute Measurement', 'Profil Kelompok'])
 
 #[ (PAGE: Data Mboil Bekas) ]
 if menu == 'Data Mobil Bekas':
@@ -66,184 +68,301 @@ if menu == 'Data Mobil Bekas':
     with st.expander('clean'):
         df_cook = df_clean[['brand', 'model', 'c_model_year', 'c_milage', 'c_accident', 'c_clean_title', 'c_price']]
         st.dataframe(df_cook, use_container_width=True)
+#[ (PAGE: CRUD) ]
+#[ (PAGE: Kelola Data - CRUD) ]
+elif menu == 'CRUD':
+    st.write('## Kelola Data Mobil Bekas (CRUD)')
+    st.caption("Gunakan halaman ini untuk Menambah (Create), Mengubah (Update), atau Menghapus (Delete) data mobil.")
+    
+    # Ambil referensi data agar modifikasi langsung berdampak ke session_state
+    df_current = st.session_state.df_raw
+
+    # Buat 3 tab agar tampilan rapi tidak menumpuk
+    tab_create, tab_update, tab_delete = st.tabs(["➕ Tambah Data", "✏️ Ubah Data", "❌ Hapus Data"])
+
+    # ------------------- CREATE (TAMBAH DATA) -------------------
+    with tab_create:
+        st.write("#### Tambah Mobil Baru")
+        with st.form("form_tambah_mobil", clear_on_submit=True):
+            col1, col2 = st.columns(2)
+            with col1:
+                brand = st.text_input("Brand (Contoh: Honda)")
+                model = st.text_input("Model (Contoh: Civic)")
+                model_year = st.number_input("Tahun Mobil", min_value=1980, max_value=2026, value=2020)
+            with col2:
+                milage = st.text_input("Milage (Contoh: 15,000 mi)", value="0 mi")
+                accident = st.selectbox("Status Kecelakaan", ["None reported", "At least 1 accident or damage reported"])
+                clean_title = st.selectbox("Clean Title", ["Yes", "No"])
+                price = st.text_input("Harga (Contoh: $25,000)", value="$0")
+            
+            submit_create = st.form_submit_button("Simpan Mobil Baru")
+            
+            if submit_create:
+                if brand and model:
+                    new_row = {
+                        'brand': brand, 'model': model, 'model_year': int(model_year),
+                        'milage': milage, 'accident': accident, 'clean_title': clean_title, 'price': price
+                    }
+                    # Concat ke dataframe utama
+                    st.session_state.df_raw = pd.concat([df_current, pd.DataFrame([new_row])], ignore_index=True)
+                    st.toast(f"Berhasil menambahkan data: {brand} {model}")
+                    time.sleep(1.5)
+                    st.rerun() # Refresh halaman untuk melihat update data
+                else:
+                    st.error("Nama Brand dan Model tidak boleh kosong!")
+
+    # ------------------- UPDATE (UBAH DATA) -------------------
+    with tab_update:
+        st.write("#### Ubah Data Mobil")
+        if not df_current.empty:
+            # Cari data berdasarkan indeks baris
+            pilihan_indeks = df_current.index
+            pilihan_label = [f"Baris {i} - {df_current.loc[i, 'brand']} {df_current.loc[i, 'model']}" for i in pilihan_indeks]
+            
+            pilih_edit = st.selectbox("Pilih mobil yang ingin diubah:", pilihan_indeks, format_func=lambda x: pilihan_label[x])
+            
+            # Form untuk edit data terpilih
+            with st.form("form_edit_mobil"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    edit_brand = st.text_input("Brand", value=df_current.loc[pilih_edit, 'brand'])
+                    edit_model = st.text_input("Model", value=df_current.loc[pilih_edit, 'model'])
+                    edit_year = st.number_input("Tahun", min_value=1980, max_value=2026, value=int(df_current.loc[pilih_edit, 'model_year']))
+                with col2:
+                    edit_milage = st.text_input("Milage", value=df_current.loc[pilih_edit, 'milage'])
+                    
+                    # Cari indeks bawaan untuk selectbox agar sesuai data lama
+                    idx_acc = 0 if df_current.loc[pilih_edit, 'accident'] == "None reported" else 1
+                    edit_accident = st.selectbox("Status Kecelakaan", ["None reported", "At least 1 accident or damage reported"], index=idx_acc)
+                    
+                    idx_title = 0 if df_current.loc[pilih_edit, 'clean_title'] == "Yes" else 1
+                    edit_clean = st.selectbox("Clean Title", ["Yes", "No"], index=idx_title)
+                    
+                    edit_price = st.text_input("Harga", value=df_current.loc[pilih_edit, 'price'])
+                
+                submit_update = st.form_submit_button("Simpan Perubahan")
+                
+                if submit_update:
+                    st.session_state.df_raw.at[pilih_edit, 'brand'] = edit_brand
+                    st.session_state.df_raw.at[pilih_edit, 'model'] = edit_model
+                    st.session_state.df_raw.at[pilih_edit, 'model_year'] = edit_year
+                    st.session_state.df_raw.at[pilih_edit, 'milage'] = edit_milage
+                    st.session_state.df_raw.at[pilih_edit, 'accident'] = edit_accident
+                    st.session_state.df_raw.at[pilih_edit, 'clean_title'] = edit_clean
+                    st.session_state.df_raw.at[pilih_edit, 'price'] = edit_price
+                    
+                    st.toast("Data berhasil diperbarui!")
+                    time.sleep(1.5)
+                    st.rerun()
+        else:
+            st.info("Tidak ada data untuk diubah.")
+
+    # ------------------- DELETE (HAPUS DATA) -------------------
+    with tab_delete:
+        st.write("#### Hapus Data Mobil")
+        if not df_current.empty:
+            pilihan_indeks_del = df_current.index
+            pilihan_label_del = [f"Baris {i} - {df_current.loc[i, 'brand']} {df_current.loc[i, 'model']}" for i in pilihan_indeks_del]
+            
+            pilih_hapus = st.selectbox("Pilih mobil yang ingin dihapus:", pilihan_indeks_del, format_func=lambda x: pilihan_label_del[x], key="del_box")
+            
+            konfirmasi = st.checkbox(f"Saya yakin ingin menghapus data Baris {pilih_hapus}")
+            submit_delete = st.button("Hapus Permanen", type="primary")
+            
+            if submit_delete:
+                if konfirmasi:
+                    # Hapus baris data dan reset indeksnya agar tidak error saat diakses kembali
+                    st.session_state.df_raw = df_current.drop(pilih_hapus).reset_index(drop=True)
+                    st.toast("Data berhasil dihapus!")
+                    time.sleep(1.5)
+                    st.rerun()
+                else:
+                    st.error("Silakan centang kotak konfirmasi terlebih dahulu!")
+        else:
+            st.info("Tidak ada data untuk dihapus.")
+
+    # Tampilkan preview data saat ini di bagian paling bawah halaman CRUD
+    st.write("---")
+    st.write("### Data Saat Ini:")
+    st.dataframe(st.session_state.df_raw, use_container_width=True)
 
 #[ (PAGE: AHP Pairwise Comparison) ]
-elif menu == 'AHP | Pairwise Comparison':
-    st.write('## AHP Pairwise Comparison')
-    st.write("#### Atur Perbandingan Berpasangan Kriteria Anda:")
+# elif menu == 'AHP | Pairwise Comparison':
+#     st.write('## AHP Pairwise Comparison')
+#     st.write("#### Atur Perbandingan Berpasangan Kriteria Anda:")
     
-    criteria_keys = ['c_model_year', 'c_milage', 'c_accident', 'c_clean_title', 'c_price']
-    criteria_labels = [
-        'Model Year (Benefit)', 
-        'Milage (Cost)', 
-        'Accident (Benefit)', 
-        'Clean Title (Benefit)', 
-        'Price (Cost)'
-    ]
-    key_to_idx = {k: i for i, k in enumerate(criteria_keys)}
-    pairs = [
-        ('c_model_year', 'c_milage', 'Model Year', 'Milage', 1, 2),        # Milage > Model Year (Skala 2)
-        ('c_model_year', 'c_accident', 'Model Year', 'Accident', 1, 4),    # Accident > Model Year (Skala 4)
-        ('c_model_year', 'c_clean_title', 'Model Year', 'Clean Title', 0, 2),# Model Year > Clean Title (Skala 2)
-        ('c_model_year', 'c_price', 'Model Year', 'Price', 1, 5),         # Price > Model Year (Skala 5)
-        ('c_milage', 'c_accident', 'Milage', 'Accident', 1, 2),            # Accident > Milage (Skala 2)
-        ('c_milage', 'c_clean_title', 'Milage', 'Clean Title', 0, 3),      # Milage > Clean Title (Skala 3)
-        ('c_milage', 'c_price', 'Milage', 'Price', 1, 3),                 # Price > Milage (Skala 3)
-        ('c_accident', 'c_clean_title', 'Accident', 'Clean Title', 0, 5),  # Accident > Clean Title (Skala 5)
-        ('c_accident', 'c_price', 'Accident', 'Price', 1, 2),             # Price > Accident (Skala 2)
-        ('c_clean_title', 'c_price', 'Clean Title', 'Price', 1, 6)         # Price > Clean Title (Skala 6)
-    ] 
-    with st.expander("Isi Nilai Perbandingan Berpasangan Kriteria", expanded=True):
-        col_left, col_right = st.columns(2)
-        for idx, (k1, k2, l1, l2, def_idx, def_skala) in enumerate(pairs):
-            target_col = col_left if idx < 5 else col_right
-            with target_col:
-                st.markdown(f"**Perbandingan {idx+1}: {l1} vs {l2}**")
-                c1, c2 = st.columns(2)
-                with c1:
-                    lp = st.selectbox("Mana yang lebih penting?", [l1, l2], index=def_idx, key=f"lp_p_{k1}_{k2}")
-                with c2:
-                    sk = st.slider("Skala Kepentingan (1-9):", 1, 9, value=def_skala, key=f"sk_p_{k1}_{k2}")
-                st.write("---")
+#     criteria_keys = ['c_model_year', 'c_milage', 'c_accident', 'c_clean_title', 'c_price']
+#     criteria_labels = [
+#         'Model Year (Benefit)', 
+#         'Milage (Cost)', 
+#         'Accident (Benefit)', 
+#         'Clean Title (Benefit)', 
+#         'Price (Cost)'
+#     ]
+#     key_to_idx = {k: i for i, k in enumerate(criteria_keys)}
+#     pairs = [
+#         ('c_model_year', 'c_milage', 'Model Year', 'Milage', 1, 2),        # Milage > Model Year (Skala 2)
+#         ('c_model_year', 'c_accident', 'Model Year', 'Accident', 1, 4),    # Accident > Model Year (Skala 4)
+#         ('c_model_year', 'c_clean_title', 'Model Year', 'Clean Title', 0, 2),# Model Year > Clean Title (Skala 2)
+#         ('c_model_year', 'c_price', 'Model Year', 'Price', 1, 5),         # Price > Model Year (Skala 5)
+#         ('c_milage', 'c_accident', 'Milage', 'Accident', 1, 2),            # Accident > Milage (Skala 2)
+#         ('c_milage', 'c_clean_title', 'Milage', 'Clean Title', 0, 3),      # Milage > Clean Title (Skala 3)
+#         ('c_milage', 'c_price', 'Milage', 'Price', 1, 3),                 # Price > Milage (Skala 3)
+#         ('c_accident', 'c_clean_title', 'Accident', 'Clean Title', 0, 5),  # Accident > Clean Title (Skala 5)
+#         ('c_accident', 'c_price', 'Accident', 'Price', 1, 2),             # Price > Accident (Skala 2)
+#         ('c_clean_title', 'c_price', 'Clean Title', 'Price', 1, 6)         # Price > Clean Title (Skala 6)
+#     ] 
+#     with st.expander("Isi Nilai Perbandingan Berpasangan Kriteria", expanded=True):
+#         col_left, col_right = st.columns(2)
+#         for idx, (k1, k2, l1, l2, def_idx, def_skala) in enumerate(pairs):
+#             target_col = col_left if idx < 5 else col_right
+#             with target_col:
+#                 st.markdown(f"**Perbandingan {idx+1}: {l1} vs {l2}**")
+#                 c1, c2 = st.columns(2)
+#                 with c1:
+#                     lp = st.selectbox("Mana yang lebih penting?", [l1, l2], index=def_idx, key=f"lp_p_{k1}_{k2}")
+#                 with c2:
+#                     sk = st.slider("Skala Kepentingan (1-9):", 1, 9, value=def_skala, key=f"sk_p_{k1}_{k2}")
+#                 st.write("---")
                 
-    st.info("Catatan: Untuk AHP Pairwise Comparison, jumlah alternatif dibatasi (misal 5 sampel mobil teratas) " \
-    "agar matriks perbandingan alternatif dapat dihitung dan ditampilkan step-by-step.")
-    num_alternatif = st.slider('Jumlah sampel mobil untuk AHP Murni:', min_value=3, max_value=20, value=5)
+#     st.info("Catatan: Untuk AHP Pairwise Comparison, jumlah alternatif dibatasi (misal 5 sampel mobil teratas) " \
+#     "agar matriks perbandingan alternatif dapat dihitung dan ditampilkan step-by-step.")
+#     num_alternatif = st.slider('Jumlah sampel mobil untuk AHP Murni:', min_value=3, max_value=20, value=5)
     
-    if st.button('Mulai Perhitungan Pairwise Comparison Murni', key='btn_pairwise'):
-        st.success('Perhitungan berhasil dijalankan.')
+#     if st.button('Mulai Perhitungan Pairwise Comparison Murni', key='btn_pairwise'):
+#         st.success('Perhitungan berhasil dijalankan.')
         
-        # BAGIAN KRITERIA
-        # STEP 1: Matriks Perbandingan Kriteria
-        st.write("### [1. BAGIAN KRITERIA]")
-        st.write("#### Step 1.1: Matriks Perbandingan Berpasangan Kriteria")
-        n_crit = len(criteria_keys)
-        A_crit = np.ones((n_crit, n_crit))
+#         # BAGIAN KRITERIA
+#         # STEP 1: Matriks Perbandingan Kriteria
+#         st.write("### [1. BAGIAN KRITERIA]")
+#         st.write("#### Step 1.1: Matriks Perbandingan Berpasangan Kriteria")
+#         n_crit = len(criteria_keys)
+#         A_crit = np.ones((n_crit, n_crit))
         
-        for k1, k2, l1, l2, _, _ in pairs:
-            i = key_to_idx[k1]
-            j = key_to_idx[k2]
-            lp = st.session_state[f"lp_p_{k1}_{k2}"]
-            sk = st.session_state[f"sk_p_{k1}_{k2}"]
-            val = float(sk) if lp == l1 else 1.0 / float(sk)
-            A_crit[i, j] = val
-            A_crit[j, i] = 1.0 / val
+#         for k1, k2, l1, l2, _, _ in pairs:
+#             i = key_to_idx[k1]
+#             j = key_to_idx[k2]
+#             lp = st.session_state[f"lp_p_{k1}_{k2}"]
+#             sk = st.session_state[f"sk_p_{k1}_{k2}"]
+#             val = float(sk) if lp == l1 else 1.0 / float(sk)
+#             A_crit[i, j] = val
+#             A_crit[j, i] = 1.0 / val
             
-        df_crit_matrix = pd.DataFrame(A_crit, index=criteria_labels, columns=criteria_labels)
-        df_crit_matrix_show = df_crit_matrix.copy()
-        df_crit_matrix_show.loc['TOTAL KOLOM'] = df_crit_matrix_show.sum(axis=0)
-        st.table(df_crit_matrix_show)
+#         df_crit_matrix = pd.DataFrame(A_crit, index=criteria_labels, columns=criteria_labels)
+#         df_crit_matrix_show = df_crit_matrix.copy()
+#         df_crit_matrix_show.loc['TOTAL KOLOM'] = df_crit_matrix_show.sum(axis=0)
+#         st.table(df_crit_matrix_show)
         
-        # #### STEP 1.2: Normalisasi Kriteria & Bobot Kriteria
-        st.write("#### Step 1.2: Normalisasi Matriks Kriteria & Bobot Kriteria (Rata-rata Baris)")
-        crit_col_sums = A_crit.sum(axis=0)
-        A_crit_norm = A_crit / crit_col_sums
-        crit_weights = A_crit_norm.mean(axis=1)
+#         # #### STEP 1.2: Normalisasi Kriteria & Bobot Kriteria
+#         st.write("#### Step 1.2: Normalisasi Matriks Kriteria & Bobot Kriteria (Rata-rata Baris)")
+#         crit_col_sums = A_crit.sum(axis=0)
+#         A_crit_norm = A_crit / crit_col_sums
+#         crit_weights = A_crit_norm.mean(axis=1)
         
-        df_crit_norm = pd.DataFrame(A_crit_norm, index=criteria_labels, columns=criteria_labels)
-        df_crit_norm['Bobot Kriteria (W)'] = crit_weights
-        st.table(df_crit_norm)
+#         df_crit_norm = pd.DataFrame(A_crit_norm, index=criteria_labels, columns=criteria_labels)
+#         df_crit_norm['Bobot Kriteria (W)'] = crit_weights
+#         st.table(df_crit_norm)
         
-        # #### STEP 1.3: Uji Konsistensi Rasio Kriteria
-        st.write("#### Step 1.3: Uji Konsistensi Kriteria")
-        lambda_max = np.sum(crit_col_sums * crit_weights)
-        CI = (lambda_max - n_crit) / (n_crit - 1)
-        # RI = 1.12 # Nilai RI untuk n=5
-        # CR = CI / RI if RI != 0 else 0
-        RI = {
-            2: 0.00, 3: 0.58, 4: 0.90, 5: 1.12, 6: 1.24, 7: 1.32, 8: 1.41, 9: 1.45,
-            10: 1.51, 11: 1.53, 12: 1.54, 13: 1.56, 14: 1.57
-        }
-        CR = CI / RI[n_crit] if RI[n_crit] != 0 else 0
+#         # #### STEP 1.3: Uji Konsistensi Rasio Kriteria
+#         st.write("#### Step 1.3: Uji Konsistensi Kriteria")
+#         lambda_max = np.sum(crit_col_sums * crit_weights)
+#         CI = (lambda_max - n_crit) / (n_crit - 1)
+#         # RI = 1.12 # Nilai RI untuk n=5
+#         # CR = CI / RI if RI != 0 else 0
+#         RI = {
+#             2: 0.00, 3: 0.58, 4: 0.90, 5: 1.12, 6: 1.24, 7: 1.32, 8: 1.41, 9: 1.45,
+#             10: 1.51, 11: 1.53, 12: 1.54, 13: 1.56, 14: 1.57
+#         }
+#         CR = CI / RI[n_crit] if RI[n_crit] != 0 else 0
         
-        c1, c2, c3 = st.columns(3)
-        c1.metric("λ max", f"{lambda_max:.4f}")
-        c2.metric("CI", f"{CI:.4f}")
-        c3.metric("CR", f"{CR:.4f}")
-        if CR < 0.1:
-            st.success(f"Logika Kriteria KONSISTEN karena nilai $CR < 0.1$ ({CR:.4f} < 0.1). Hasil perhitungan valid.")
-        else:
-            st.warning(f"Logika Kriteria TIDAK KONSISTEN karena nilai $CR \ge 0.1$ ({CR:.4f} $\ge$ 0.1). Disarankan mengatur ulang skala perbandingan.")
+#         c1, c2, c3 = st.columns(3)
+#         c1.metric("λ max", f"{lambda_max:.4f}")
+#         c2.metric("CI", f"{CI:.4f}")
+#         c3.metric("CR", f"{CR:.4f}")
+#         if CR < 0.1:
+#             st.success(f"Logika Kriteria KONSISTEN karena nilai $CR < 0.1$ ({CR:.4f} < 0.1). Hasil perhitungan valid.")
+#         else:
+#             st.warning(f"Logika Kriteria TIDAK KONSISTEN karena nilai $CR \ge 0.1$ ({CR:.4f} $\ge$ 0.1). Disarankan mengatur ulang skala perbandingan.")
 
-        # BAGIAN ALTERNATIF
-        st.write("### [2. BAGIAN ALTERNATIF]")
+#         # BAGIAN ALTERNATIF
+#         st.write("### [2. BAGIAN ALTERNATIF]")
         
-        # ambil sampel data alternatif
-        df_sample = df_clean.head(num_alternatif).copy()
-        alt_names = [f"{row['brand']} {row['model']} ({idx})" for idx, row in df_sample.iterrows()]
-        n_alt = len(alt_names)
+#         # ambil sampel data alternatif
+#         df_sample = df_clean.head(num_alternatif).copy()
+#         alt_names = [f"{row['brand']} {row['model']} ({idx})" for idx, row in df_sample.iterrows()]
+#         n_alt = len(alt_names)
         
-        rekap_bobot_alt = np.zeros((n_alt, n_crit))
+#         rekap_bobot_alt = np.zeros((n_alt, n_crit))
         
-        for c_idx, k_key in enumerate(criteria_keys):
-            st.write(f"#### Step 2.{c_idx+1}: Perbandingan Alternatif pada Kriteria **{criteria_labels[c_idx]}**")
+#         for c_idx, k_key in enumerate(criteria_keys):
+#             st.write(f"#### Step 2.{c_idx+1}: Perbandingan Alternatif pada Kriteria **{criteria_labels[c_idx]}**")
             
-            A_alt = np.ones((n_alt, n_alt))
-            is_cost = 'Cost' in criteria_labels[c_idx]
+#             A_alt = np.ones((n_alt, n_alt))
+#             is_cost = 'Cost' in criteria_labels[c_idx]
             
-            for i in range(n_alt):
-                for j in range(n_alt):
-                    val_i = df_sample.iloc[i][k_key]
-                    val_j = df_sample.iloc[j][k_key]
+#             for i in range(n_alt):
+#                 for j in range(n_alt):
+#                     val_i = df_sample.iloc[i][k_key]
+#                     val_j = df_sample.iloc[j][k_key]
                     
-                    val_i = 0.001 if val_i == 0 else val_i
-                    val_j = 0.001 if val_j == 0 else val_j
+#                     val_i = 0.001 if val_i == 0 else val_i
+#                     val_j = 0.001 if val_j == 0 else val_j
                     
-                    if not is_cost:
-                        A_alt[i, j] = val_i / val_j
-                    else:
-                        A_alt[i, j] = val_j / val_i
+#                     if not is_cost:
+#                         A_alt[i, j] = val_i / val_j
+#                     else:
+#                         A_alt[i, j] = val_j / val_i
             
-            df_a_alt = pd.DataFrame(A_alt, index=alt_names, columns=alt_names)
-            df_a_alt_show = df_a_alt.copy()
-            df_a_alt_show.loc['TOTAL KOLOM'] = df_a_alt_show.sum(axis=0)
-            st.caption(f"Matriks Perbandingan Berpasangan Alternatif - {criteria_labels[c_idx]}")
-            st.table(df_a_alt_show)
+#             df_a_alt = pd.DataFrame(A_alt, index=alt_names, columns=alt_names)
+#             df_a_alt_show = df_a_alt.copy()
+#             df_a_alt_show.loc['TOTAL KOLOM'] = df_a_alt_show.sum(axis=0)
+#             st.caption(f"Matriks Perbandingan Berpasangan Alternatif - {criteria_labels[c_idx]}")
+#             st.table(df_a_alt_show)
             
-            alt_col_sums = A_alt.sum(axis=0)
-            A_alt_norm = A_alt / alt_col_sums
-            alt_weights = A_alt_norm.mean(axis=1)
+#             alt_col_sums = A_alt.sum(axis=0)
+#             A_alt_norm = A_alt / alt_col_sums
+#             alt_weights = A_alt_norm.mean(axis=1)
             
-            rekap_bobot_alt[:, c_idx] = alt_weights
+#             rekap_bobot_alt[:, c_idx] = alt_weights
             
-            df_a_alt_norm = pd.DataFrame(A_alt_norm, index=alt_names, columns=alt_names)
-            df_a_alt_norm['Bobot Lokal'] = alt_weights
-            st.caption(f"Matriks Normalisasi & Bobot Lokal Alternatif - {criteria_labels[c_idx]}")
-            st.table(df_a_alt_norm)
-            st.write("---")
+#             df_a_alt_norm = pd.DataFrame(A_alt_norm, index=alt_names, columns=alt_names)
+#             df_a_alt_norm['Bobot Lokal'] = alt_weights
+#             st.caption(f"Matriks Normalisasi & Bobot Lokal Alternatif - {criteria_labels[c_idx]}")
+#             st.table(df_a_alt_norm)
+#             st.write("---")
             
-        # REKAP BOBOT & SKOR AKHIR
-        st.write("### [3. BAGIAN AKHIR: REKAP BOBOT & SKOR AKHIR]")
-        st.write("#### Step 3.1: Tabel Rekapitulasi Bobot Alternatif")
+#         # REKAP BOBOT & SKOR AKHIR
+#         st.write("### [3. BAGIAN AKHIR: REKAP BOBOT & SKOR AKHIR]")
+#         st.write("#### Step 3.1: Tabel Rekapitulasi Bobot Alternatif")
         
-        df_rekap = pd.DataFrame(rekap_bobot_alt, index=alt_names, columns=criteria_labels)
-        st.table(df_rekap)
+#         df_rekap = pd.DataFrame(rekap_bobot_alt, index=alt_names, columns=criteria_labels)
+#         st.table(df_rekap)
         
-        st.write("#### Step 3.2: Hasil Perhitungan Skor Akhir (Rekap Bobot $\times$ Bobot Kriteria)")
-        skor_akhir = np.dot(rekap_bobot_alt, crit_weights)
+#         st.write("#### Step 3.2: Hasil Perhitungan Skor Akhir (Rekap Bobot $\times$ Bobot Kriteria)")
+#         skor_akhir = np.dot(rekap_bobot_alt, crit_weights)
         
-        df_final = pd.DataFrame({
-            'Alternatif Mobil': alt_names,
-            'Skor Akhir AHP': skor_akhir
-        })
-        # tabel hasil akhir
-        df_final_sorted = df_final.sort_values(by='Skor Akhir AHP', ascending=False).reset_index(drop=True)
-        df_final_sorted.index = df_final_sorted.index + 1
-        df_final_sorted.index.name = 'Rank'
-        st.dataframe(df_final_sorted, use_container_width=True)
+#         df_final = pd.DataFrame({
+#             'Alternatif Mobil': alt_names,
+#             'Skor Akhir AHP': skor_akhir
+#         })
+#         # tabel hasil akhir
+#         df_final_sorted = df_final.sort_values(by='Skor Akhir AHP', ascending=False).reset_index(drop=True)
+#         df_final_sorted.index = df_final_sorted.index + 1
+#         df_final_sorted.index.name = 'Rank'
+#         st.dataframe(df_final_sorted, use_container_width=True)
 
-        # grafik hasil
-        fig, ax = plt.subplots(figsize=(8, 4))
-        bars = ax.barh(df_final_sorted['Alternatif Mobil'], df_final_sorted['Skor Akhir AHP'], color='lightgreen', edgecolor='black')
-        ax.invert_yaxis()
-        ax.set_xlabel('Skor Akhir')
-        ax.set_title('Rekomendasi Akhir AHP Murni')
-        ax.bar_label(bars, fmt='%.4f', padding=5)
-        st.pyplot(fig)
+#         # grafik hasil
+#         fig, ax = plt.subplots(figsize=(8, 4))
+#         bars = ax.barh(df_final_sorted['Alternatif Mobil'], df_final_sorted['Skor Akhir AHP'], color='lightgreen', edgecolor='black')
+#         ax.invert_yaxis()
+#         ax.set_xlabel('Skor Akhir')
+#         ax.set_title('Rekomendasi Akhir AHP Murni')
+#         ax.bar_label(bars, fmt='%.4f', padding=5)
+#         st.pyplot(fig)
 
-         # download button
-        csv = df_final_sorted.to_csv(index=False).encode('utf-8')
-        st.download_button(label='Unduh Hasil Akhir', data=csv, file_name='hasil_ahp_pairwise_comparison.csv', mime="text/csv")
+#          # download button
+#         csv = df_final_sorted.to_csv(index=False).encode('utf-8')
+#         st.download_button(label='Unduh Hasil Akhir', data=csv, file_name='hasil_ahp_pairwise_comparison.csv', mime="text/csv")
 
 #[ (PAGE: AHP Absolute Measurement) ]
 elif menu == 'AHP | Absolute Measurement':
@@ -406,111 +525,6 @@ elif menu == 'AHP | Absolute Measurement':
         # download button
         csv = df_hasil_sorted.to_csv(index=False).encode('utf-8')
         st.download_button(label='Unduh Hasil Akhir', data=csv, file_name='hasil_ahp_absolute.csv', mime="text/csv")
-
-#[ (PAGE: CRUD )]
-elif menu == 'CRUD':
-    st.write('## Kelola Data Mobil Bekas')
-    st.caption("Silakan menambah, mengubah, atau menghapus data mobil pada tab di bawah ini.")
-    
-    tab1, tab2, tab3 = st.tabs(['Tambah Data', 'Edit Data', 'Hapus Data'])
-    
-    # CREATE (Tambah Data) 
-    with tab1:
-        st.write("### Tambah Mobil Baru")
-        with st.form("form_tambah_mobil", clear_on_submit=True):
-            c1, c2 = st.columns(2)
-            with c1:
-                new_brand = st.text_input("Brand / Merek", value="Toyota")
-                new_model = st.text_input("Model Mobil", value="Innova Zenix")
-                new_year = st.number_input("Tahun (Model Year)", min_value=1900, max_value=2026, value=2023)
-            with c2:
-                new_milage = st.text_input("Jarak Tempuh (Milage) *Contoh: 12,000 mi", value="12,000 mi")
-                new_accident = st.selectbox("Status Kecelakaan (Accident)", ["None reported", "At least 1 accident or damage reported"])
-                new_title = st.selectbox("Clean Title", ["Yes", "No"])
-                new_price = st.text_input("Harga (Price) *Contoh: $35,000", value="$35,000")
-                
-            submit_tambah = st.form_submit_button("Simpan Mobil Baru")
-            if submit_tambah:
-                new_row = {
-                    'brand': new_brand, 
-                    'model': new_model, 
-                    'model_year': int(new_year),
-                    'milage': new_milage, 
-                    'accident': new_accident, 
-                    'clean_title': new_title if new_title == "Yes" else np.nan, 
-                    'price': new_price
-                }
-                # Memasukkan data baru ke session state
-                st.session_state.df_raw = pd.concat([st.session_state.df_raw, pd.DataFrame([new_row])], ignore_index=True)
-                st.success(f"Berhasil menambahkan data mobil: {new_brand} {new_model}!")
-                st.rerun() # Refresh halaman untuk memperbarui data global
-
-    # UPDATE (Ubah Data)
-    with tab2:
-        st.write("### Ubah Data Mobil")
-        if len(df_raw) == 0:
-            st.warning("Tidak ada data tersedia untuk diubah.")
-        else:
-            # Pilih baris data berdasarkan indeks DataFrame
-            pilihan_indeks = st.selectbox(
-                "Pilih data mobil yang ingin diubah:", 
-                options=df_raw.index,
-                format_func=lambda x: f"Indeks {x}: {df_raw.loc[x, 'brand']} {df_raw.loc[x, 'model']} ({df_raw.loc[x, 'model_year']})"
-            )
-            
-            # Form otomatis terisi dengan data lama sesuai indeks yang dipilih
-            with st.form("form_ubah_mobil"):
-                c1, c2 = st.columns(2)
-                with c1:
-                    edit_brand = st.text_input("Brand / Merek", value=df_raw.loc[pilihan_indeks, 'brand'])
-                    edit_model = st.text_input("Model Mobil", value=df_raw.loc[pilihan_indeks, 'model'])
-                    edit_year = st.number_input("Tahun", min_value=1900, max_value=2026, value=int(df_raw.loc[pilihan_indeks, 'model_year']))
-                with c2:
-                    edit_milage = st.text_input("Jarak Tempuh (Milage)", value=str(df_raw.loc[pilihan_indeks, 'milage']))
-                    
-                    # Set default index selectbox accident berdasarkan data lama
-                    acc_val = str(df_raw.loc[pilihan_indeks, 'accident'])
-                    acc_idx = 0 if "None" in acc_val else 1
-                    edit_accident = st.selectbox("Status Kecelakaan", ["None reported", "At least 1 accident or damage reported"], index=acc_idx)
-                    
-                    # Set default index selectbox clean title berdasarkan data lama
-                    title_val = str(df_raw.loc[pilihan_indeks, 'clean_title'])
-                    title_idx = 0 if title_val == "Yes" else 1
-                    edit_title = st.selectbox("Clean Title", ["Yes", "No"], index=title_idx)
-                    
-                    edit_price = st.text_input("Harga (Price)", value=str(df_raw.loc[pilihan_indeks, 'price']))
-                
-                submit_ubah = st.form_submit_button("Simpan Perubahan Data")
-                if submit_ubah:
-                    st.session_state.df_raw.loc[pilihan_indeks, 'brand'] = edit_brand
-                    st.session_state.df_raw.loc[pilihan_indeks, 'model'] = edit_model
-                    st.session_state.df_raw.loc[pilihan_indeks, 'model_year'] = int(edit_year)
-                    st.session_state.df_raw.loc[pilihan_indeks, 'milage'] = edit_milage
-                    st.session_state.df_raw.loc[pilihan_indeks, 'accident'] = edit_accident
-                    st.session_state.df_raw.loc[pilihan_indeks, 'clean_title'] = edit_title if edit_title == "Yes" else np.nan
-                    st.session_state.df_raw.loc[pilihan_indeks, 'price'] = edit_price
-                    
-                    st.success("Data mobil berhasil diperbarui!")
-                    st.rerun()
-
-    # DELETE (Hapus Data)
-    with tab3:
-        st.write("### Hapus Data Mobil")
-        if len(df_raw) == 0:
-            st.warning("Tidak ada data tersedia untuk dihapus.")
-        else:
-            hapus_indeks = st.selectbox(
-                "Pilih data mobil yang ingin dihapus:", 
-                options=df_raw.index,
-                format_func=lambda x: f"Indeks {x}: {df_raw.loc[x, 'brand']} {df_raw.loc[x, 'model']} ({df_raw.loc[x, 'model_year']})"
-            )
-            
-            st.warning(f"Apakah Anda yakin ingin menghapus permanent data mobil: **{df_raw.loc[hapus_indeks, 'brand']} {df_raw.loc[hapus_indeks, 'model']}**?")
-            if st.button("Ya, Hapus Sekarang", type="primary"):
-                # Hapus baris berdasarkan indeks dan reset nomor indeksnya agar urut kembali
-                st.session_state.df_raw = st.session_state.df_raw.drop(hapus_indeks).reset_index(drop=True)
-                st.success("Data berhasil dihapus dari sistem!")
-                st.rerun()
 
 #[ (PAGE: Profil Kelompok) ]
 elif menu == 'Profil Kelompok':
