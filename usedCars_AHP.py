@@ -9,44 +9,87 @@ st.divider()
 
 # [( Load Function & Pembersihan Data )]
 # disimpan ke RAM
-@st.cache_data
-def load_n_clean():
+# @st.cache_data
+# def load_n_clean():
+    # try:
+    #     df = pd.read_csv('used_cars.csv')
+    # except FileNotFoundError:
+    #     data_dummy = {
+    #         'brand': ['Ford', 'Hyundai', 'Lexus', 'BMW', 'Audi'],
+    #         'model': ['Utility', 'Palisade', 'RX 350', '740 iL', 'Q3'],
+    #         'model_year': [2013, 2021, 2022, 2001, 2021],
+    #         'milage': ['51,000 mi', '34,742 mi', '22,372 mi', '242,000 mi', '9,835 mi'],
+    #         'accident': ['At least 1 accident or damage reported', 'At least 1 accident or damage reported', 'None reported', 'None reported', 'None reported'],
+    #         'clean_title': ['Yes', 'Yes', np.nan, 'Yes', np.nan], # np.nan -> not a number
+    #         'price': ['$10,300', '$38,005', '$54,598', '$7,300', '$34,999']
+    #     }
+    #     df = pd.DataFrame(data_dummy)
+    # cleaned_df = df.copy()
+    # #c -> clean
+    # #price: menghilangkan '$'
+    # cleaned_df['c_price'] = cleaned_df['price'].astype(str).str.replace('$', '').str.replace(',', '').astype(float)
+    # #milage: menghilangkan ',' dan 'mi.'
+    # cleaned_df['c_milage'] = cleaned_df['milage'].astype(str).str.replace(',', '').str.replace('mi.', '').astype(float)
+    # #accident: none reported = 1, ada accident = 0
+    # cleaned_df['c_accident'] = cleaned_df['accident'].apply(
+    #     lambda x: 1 if str(x).strip() == 'None reported' else 0
+    # )
+    # #clean_title: yes = 1, lainnya = 0
+    # cleaned_df['c_clean_title'] = cleaned_df['clean_title'].apply(
+    #     lambda x: 1 if str(x).strip() == 'Yes' else 0
+    # )
+    # #model_year: sesuai data
+    # cleaned_df['c_model_year'] = cleaned_df['model_year'].astype(float)
+    
+    # return df, cleaned_df
+# df_raw, df_clean = load_n_clean()
+
+if 'df_raw' not in st.session_state:
     try:
         df = pd.read_csv('used_cars.csv')
     except FileNotFoundError:
+        # kalau file CSV tidak ditemukan, tampilin data dummy
         data_dummy = {
             'brand': ['Ford', 'Hyundai', 'Lexus', 'BMW', 'Audi'],
             'model': ['Utility', 'Palisade', 'RX 350', '740 iL', 'Q3'],
             'model_year': [2013, 2021, 2022, 2001, 2021],
             'milage': ['51,000 mi', '34,742 mi', '22,372 mi', '242,000 mi', '9,835 mi'],
             'accident': ['At least 1 accident or damage reported', 'At least 1 accident or damage reported', 'None reported', 'None reported', 'None reported'],
-            'clean_title': ['Yes', 'Yes', np.nan, 'Yes', np.nan], # np.nan -> not a number
+            'clean_title': ['Yes', 'Yes', np.nan, 'Yes', np.nan],
             'price': ['$10,300', '$38,005', '$54,598', '$7,300', '$34,999']
         }
         df = pd.DataFrame(data_dummy)
-    cleaned_df = df.copy()
-    #c -> clean
-    #price: menghilangkan '$'
-    cleaned_df['c_price'] = cleaned_df['price'].astype(str).str.replace('$', '').str.replace(',', '').astype(float)
-    #milage: menghilangkan ',' dan 'mi.'
-    cleaned_df['c_milage'] = cleaned_df['milage'].astype(str).str.replace(',', '').str.replace('mi.', '').astype(float)
-    #accident: none reported = 1, ada accident = 0
+    st.session_state.df_raw = df
+
+# Fungsi buat bersihin data
+def get_cleaned_data():
+    cleaned_df = st.session_state.df_raw.copy()
+    
+    # price: menghilangkan '$' dan ','
+    cleaned_df['c_price'] = cleaned_df['price'].astype(str).str.replace('$', '', regex=False).str.replace(',', '', regex=False).astype(float)
+    # milage: menghilangkan ',' dan 'mi'
+    cleaned_df['c_milage'] = cleaned_df['milage'].astype(str).str.replace(',', '', regex=False).str.replace('mi', '', regex=False).str.replace('.', '', regex=False).str.strip().astype(float)
+    # accident: none reported = 1, ada accident = 0
     cleaned_df['c_accident'] = cleaned_df['accident'].apply(
         lambda x: 1 if str(x).strip() == 'None reported' else 0
     )
-    #clean_title: yes = 1, lainnya = 0
+    # clean_title: yes = 1, lainnya = 0
     cleaned_df['c_clean_title'] = cleaned_df['clean_title'].apply(
         lambda x: 1 if str(x).strip() == 'Yes' else 0
     )
-    #model_year: sesuai data
+    # model_year: sesuai data
     cleaned_df['c_model_year'] = cleaned_df['model_year'].astype(float)
     
-    return df, cleaned_df
-df_raw, df_clean = load_n_clean()
+    return cleaned_df
+
+# Ambil variabel data terupdate untuk dipakai di halaman-halaman bawah
+# ambil data ter update
+df_raw = st.session_state.df_raw
+df_clean = get_cleaned_data()
 
 #[ (SIDEBAR) ]
 st.sidebar.title('Menu Utama')
-menu = st.sidebar.selectbox('Pilih halaman:', ['Data Mobil Bekas', 'AHP | Pairwise Comparison', 'AHP | Absolute Measurement', 'Profil Kelompok'])
+menu = st.sidebar.selectbox('Pilih halaman:', ['Data Mobil Bekas', 'AHP | Pairwise Comparison', 'AHP | Absolute Measurement', 'CRUD', 'Profil Kelompok'])
 
 #[ (PAGE: Data Mboil Bekas) ]
 if menu == 'Data Mobil Bekas':
@@ -399,6 +442,111 @@ elif menu == 'AHP | Absolute Measurement':
         # download button
         csv = df_hasil_sorted.to_csv(index=False).encode('utf-8')
         st.download_button(label='Unduh Hasil Akhir', data=csv, file_name='hasil_ahp_absolute.csv', mime="text/csv")
+
+#[ (Halaman CRUD )]
+elif menu == 'CRUD':
+    st.write('## Kelola Data Mobil Bekas')
+    st.caption("Silakan menambah, mengubah, atau menghapus data mobil pada tab di bawah ini.")
+    
+    tab1, tab2, tab3 = st.tabs(['Tambah Data', 'Edit Data', 'Hapus Data'])
+    
+    # CREATE (Tambah Data) 
+    with tab1:
+        st.write("### Tambah Mobil Baru")
+        with st.form("form_tambah_mobil", clear_on_submit=True):
+            c1, c2 = st.columns(2)
+            with c1:
+                new_brand = st.text_input("Brand / Merek", value="Toyota")
+                new_model = st.text_input("Model Mobil", value="Innova Zenix")
+                new_year = st.number_input("Tahun (Model Year)", min_value=1900, max_value=2026, value=2023)
+            with c2:
+                new_milage = st.text_input("Jarak Tempuh (Milage) *Contoh: 12,000 mi", value="12,000 mi")
+                new_accident = st.selectbox("Status Kecelakaan (Accident)", ["None reported", "At least 1 accident or damage reported"])
+                new_title = st.selectbox("Clean Title", ["Yes", "No"])
+                new_price = st.text_input("Harga (Price) *Contoh: $35,000", value="$35,000")
+                
+            submit_tambah = st.form_submit_button("Simpan Mobil Baru")
+            if submit_tambah:
+                new_row = {
+                    'brand': new_brand, 
+                    'model': new_model, 
+                    'model_year': int(new_year),
+                    'milage': new_milage, 
+                    'accident': new_accident, 
+                    'clean_title': new_title if new_title == "Yes" else np.nan, 
+                    'price': new_price
+                }
+                # Memasukkan data baru ke session state
+                st.session_state.df_raw = pd.concat([st.session_state.df_raw, pd.DataFrame([new_row])], ignore_index=True)
+                st.success(f"Berhasil menambahkan data mobil: {new_brand} {new_model}!")
+                st.rerun() # Refresh halaman untuk memperbarui data global
+
+    # UPDATE (Ubah Data)
+    with tab2:
+        st.write("### Ubah Data Mobil")
+        if len(df_raw) == 0:
+            st.warning("Tidak ada data tersedia untuk diubah.")
+        else:
+            # Pilih baris data berdasarkan indeks DataFrame
+            pilihan_indeks = st.selectbox(
+                "Pilih data mobil yang ingin diubah:", 
+                options=df_raw.index,
+                format_func=lambda x: f"Indeks {x}: {df_raw.loc[x, 'brand']} {df_raw.loc[x, 'model']} ({df_raw.loc[x, 'model_year']})"
+            )
+            
+            # Form otomatis terisi dengan data lama sesuai indeks yang dipilih
+            with st.form("form_ubah_mobil"):
+                c1, c2 = st.columns(2)
+                with c1:
+                    edit_brand = st.text_input("Brand / Merek", value=df_raw.loc[pilihan_indeks, 'brand'])
+                    edit_model = st.text_input("Model Mobil", value=df_raw.loc[pilihan_indeks, 'model'])
+                    edit_year = st.number_input("Tahun", min_value=1900, max_value=2026, value=int(df_raw.loc[pilihan_indeks, 'model_year']))
+                with c2:
+                    edit_milage = st.text_input("Jarak Tempuh (Milage)", value=str(df_raw.loc[pilihan_indeks, 'milage']))
+                    
+                    # Set default index selectbox accident berdasarkan data lama
+                    acc_val = str(df_raw.loc[pilihan_indeks, 'accident'])
+                    acc_idx = 0 if "None" in acc_val else 1
+                    edit_accident = st.selectbox("Status Kecelakaan", ["None reported", "At least 1 accident or damage reported"], index=acc_idx)
+                    
+                    # Set default index selectbox clean title berdasarkan data lama
+                    title_val = str(df_raw.loc[pilihan_indeks, 'clean_title'])
+                    title_idx = 0 if title_val == "Yes" else 1
+                    edit_title = st.selectbox("Clean Title", ["Yes", "No"], index=title_idx)
+                    
+                    edit_price = st.text_input("Harga (Price)", value=str(df_raw.loc[pilihan_indeks, 'price']))
+                
+                submit_ubah = st.form_submit_button("Simpan Perubahan Data")
+                if submit_ubah:
+                    st.session_state.df_raw.loc[pilihan_indeks, 'brand'] = edit_brand
+                    st.session_state.df_raw.loc[pilihan_indeks, 'model'] = edit_model
+                    st.session_state.df_raw.loc[pilihan_indeks, 'model_year'] = int(edit_year)
+                    st.session_state.df_raw.loc[pilihan_indeks, 'milage'] = edit_milage
+                    st.session_state.df_raw.loc[pilihan_indeks, 'accident'] = edit_accident
+                    st.session_state.df_raw.loc[pilihan_indeks, 'clean_title'] = edit_title if edit_title == "Yes" else np.nan
+                    st.session_state.df_raw.loc[pilihan_indeks, 'price'] = edit_price
+                    
+                    st.success("Data mobil berhasil diperbarui!")
+                    st.rerun()
+
+    # DELETE (Hapus Data)
+    with tab3:
+        st.write("### Hapus Data Mobil")
+        if len(df_raw) == 0:
+            st.warning("Tidak ada data tersedia untuk dihapus.")
+        else:
+            hapus_indeks = st.selectbox(
+                "Pilih data mobil yang ingin dihapus:", 
+                options=df_raw.index,
+                format_func=lambda x: f"Indeks {x}: {df_raw.loc[x, 'brand']} {df_raw.loc[x, 'model']} ({df_raw.loc[x, 'model_year']})"
+            )
+            
+            st.warning(f"Apakah Anda yakin ingin menghapus permanent data mobil: **{df_raw.loc[hapus_indeks, 'brand']} {df_raw.loc[hapus_indeks, 'model']}**?")
+            if st.button("Ya, Hapus Sekarang", type="primary"):
+                # Hapus baris berdasarkan indeks dan reset nomor indeksnya agar urut kembali
+                st.session_state.df_raw = st.session_state.df_raw.drop(hapus_indeks).reset_index(drop=True)
+                st.success("Data berhasil dihapus dari sistem!")
+                st.rerun()
 
 # [ (PAGE: Profil Kelompok) ]
 elif menu == 'Profil Kelompok':
