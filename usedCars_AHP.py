@@ -7,7 +7,7 @@ st.set_page_config(page_icon='🗿', page_title='SPK Mobil Bekas | AHP', layout=
 st.title('Pemilihan Mobil Bekas dengan Metode AHP', text_alignment='center')
 st.divider()
 
-# [( Load Function & Pembersihan Data )]
+#[ (Pembersihan Data ) ]
 
 if 'df_raw' not in st.session_state:
     try:
@@ -47,7 +47,6 @@ def get_cleaned_data():
     
     return cleaned_df
 
-# Ambil variabel data terupdate untuk dipakai di halaman-halaman bawah
 # ambil data ter update
 df_raw = st.session_state.df_raw
 df_clean = get_cleaned_data()
@@ -246,7 +245,7 @@ elif menu == 'AHP | Pairwise Comparison':
         csv = df_final_sorted.to_csv(index=False).encode('utf-8')
         st.download_button(label='Unduh Hasil Akhir', data=csv, file_name='hasil_ahp_pairwise_comparison.csv', mime="text/csv")
 
-#[ (Halaman AHP Absolute Measurement) ]
+#[ (PAGE: AHP Absolute Measurement) ]
 elif menu == 'AHP | Absolute Measurement':
     st.write('## AHP Absolute Measurement')
     st.write("#### Langkah 1: Input Perbandingan Berpasangan Antar Kriteria")
@@ -408,7 +407,7 @@ elif menu == 'AHP | Absolute Measurement':
         csv = df_hasil_sorted.to_csv(index=False).encode('utf-8')
         st.download_button(label='Unduh Hasil Akhir', data=csv, file_name='hasil_ahp_absolute.csv', mime="text/csv")
 
-#[ (Halaman CRUD )]
+#[ (PAGE: CRUD )]
 elif menu == 'CRUD':
     st.write('## Kelola Data Mobil Bekas')
     st.caption("Silakan menambah, mengubah, atau menghapus data mobil pada tab di bawah ini.")
@@ -513,7 +512,7 @@ elif menu == 'CRUD':
                 st.success("Data berhasil dihapus dari sistem!")
                 st.rerun()
 
-# [ (PAGE: Profil Kelompok) ]
+#[ (PAGE: Profil Kelompok) ]
 elif menu == 'Profil Kelompok':
     st.write('## Profil Kelompok')
     col1, col2, col3 = st.columns(3)
