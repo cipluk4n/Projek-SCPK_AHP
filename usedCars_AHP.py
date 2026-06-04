@@ -8,41 +8,6 @@ st.title('Pemilihan Mobil Bekas dengan Metode AHP', text_alignment='center')
 st.divider()
 
 # [( Load Function & Pembersihan Data )]
-# disimpan ke RAM
-# @st.cache_data
-# def load_n_clean():
-    # try:
-    #     df = pd.read_csv('used_cars.csv')
-    # except FileNotFoundError:
-    #     data_dummy = {
-    #         'brand': ['Ford', 'Hyundai', 'Lexus', 'BMW', 'Audi'],
-    #         'model': ['Utility', 'Palisade', 'RX 350', '740 iL', 'Q3'],
-    #         'model_year': [2013, 2021, 2022, 2001, 2021],
-    #         'milage': ['51,000 mi', '34,742 mi', '22,372 mi', '242,000 mi', '9,835 mi'],
-    #         'accident': ['At least 1 accident or damage reported', 'At least 1 accident or damage reported', 'None reported', 'None reported', 'None reported'],
-    #         'clean_title': ['Yes', 'Yes', np.nan, 'Yes', np.nan], # np.nan -> not a number
-    #         'price': ['$10,300', '$38,005', '$54,598', '$7,300', '$34,999']
-    #     }
-    #     df = pd.DataFrame(data_dummy)
-    # cleaned_df = df.copy()
-    # #c -> clean
-    # #price: menghilangkan '$'
-    # cleaned_df['c_price'] = cleaned_df['price'].astype(str).str.replace('$', '').str.replace(',', '').astype(float)
-    # #milage: menghilangkan ',' dan 'mi.'
-    # cleaned_df['c_milage'] = cleaned_df['milage'].astype(str).str.replace(',', '').str.replace('mi.', '').astype(float)
-    # #accident: none reported = 1, ada accident = 0
-    # cleaned_df['c_accident'] = cleaned_df['accident'].apply(
-    #     lambda x: 1 if str(x).strip() == 'None reported' else 0
-    # )
-    # #clean_title: yes = 1, lainnya = 0
-    # cleaned_df['c_clean_title'] = cleaned_df['clean_title'].apply(
-    #     lambda x: 1 if str(x).strip() == 'Yes' else 0
-    # )
-    # #model_year: sesuai data
-    # cleaned_df['c_model_year'] = cleaned_df['model_year'].astype(float)
-    
-    # return df, cleaned_df
-# df_raw, df_clean = load_n_clean()
 
 if 'df_raw' not in st.session_state:
     try:
