@@ -53,7 +53,7 @@ st.markdown("---")
 
 # SIDEBAR
 # ----------------------------------------
-menu = st.sidebar.selectbox("Pilih Menu Aplikasi:", ["Data Mobil Bekas", "Perhitungan Rekomendasi | AHP"])
+menu = st.sidebar.selectbox("Pilih Menu Aplikasi:", ["Data Mobil Bekas", "Perhitungan Rekomendasi | AHP", "Profil Kelompok"])
 
 # MENU 1: DATA MOBIL BEKAS
 if menu == "Data Mobil Bekas":
@@ -345,3 +345,13 @@ elif menu == "Perhitungan Rekomendasi | AHP":
                 
             else:
                 st.error("Konfirmasi: Hasil TIDAK Konsisten! (CR > 0.1). Mohon isi kembali slider di atas dengan logika yang lebih sinkron.")
+
+# MENU 2: Profil Kelompok
+# ----------------------------------------------------
+elif menu == "Profil Kelompok":
+    st.write("## Profil Kelompok")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.info('- Desta Fondria \n - IF-A \n - 123240028')
+    with col2:
+        st.info('- Rabbani \n - IF-A \n - 123240099')
