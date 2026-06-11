@@ -58,12 +58,12 @@ menu = st.sidebar.selectbox("Pilih Menu Aplikasi:", ["Data Mobil Bekas", "Perhit
 # MENU 1: DATA MOBIL BEKAS
 if menu == "Data Mobil Bekas":
     st.header("Database Mobil Bekas")
-    st.write(f"Total data di database: **{len(df_mobil)}** baris.")
+    # st.write(f"Total data di database: **{len(df_mobil)}** baris.")
     st.info(f"- Total data: {len(df_mobil)} baris. \n" \
     "- Dataset by: Taeef Najib \n" \
     "- Link: https://www.kaggle.com/datasets/taeefnajib/used-car-price-prediction-dataset")
     
-    st.dataframe(df_mobil[['brand', 'model', 'model_year', 'price', 'milage', 'fuel_type', 'tx_clean', 'accident', 'clean_title']], use_container_width=True)
+    st.dataframe(df_mobil[['brand', 'model', 'model_year', 'price', 'milage', 'fuel_type', 'tx_clean', 'accident', 'clean_title', 'ext_col', 'int_col']], use_container_width=True)
     
     tab_tambah, tab_edit, tab_hapus = st.tabs(["Tambah Data", "Edit Data", "Hapus Data"])
     
@@ -74,7 +74,7 @@ if menu == "Data Mobil Bekas":
         with c1:
             brand = st.text_input("Brand/Merk") #contoh: Mercedes
             model = st.text_input("Model Mobil") #contoh: Formula 1
-            year = st.number_input("Tahun Pembuatan", min_value=1950, max_value=2026) #contoh: 1954
+            year = st.number_input("Tahun Pembuatan", min_value=1950, max_value=2026, value=2026) #contoh: 1954
         with c2:
             price_input = st.text_input("Harga (contoh: $20,000)", "$") #contoh: $30,000,000
             milage_input = st.text_input("Milage (contoh: 15,000 mi.)", "mi.")
@@ -308,6 +308,7 @@ elif menu == "Perhitungan Rekomendasi | AHP":
                 min_m, max_m = df_mobil['milage_clean'].min(), df_mobil['milage_clean'].max()
                 min_y, max_y = df_mobil['model_year'].min(), df_mobil['model_year'].max()
                 
+                # price(cost), milage(cost), model_year(benefit), engine(benefit), accident(benefit), clean_title(benefit)
                 df_scoring['s_price'] = (1 + 8 * (1 - (df_scoring['price_clean'] - min_p) / (max_p - min_p + 1))) / 9.0
                 df_scoring['s_mile'] = (1 + 8 * (1 - (df_scoring['milage_clean'] - min_m) / (max_m - min_m + 1))) / 9.0
                 df_scoring['s_year'] = (1 + 8 * ((df_scoring['model_year'] - min_y) / (max_y - min_y + 1))) / 9.0
@@ -324,7 +325,7 @@ elif menu == "Perhitungan Rekomendasi | AHP":
                 score_matrix = df_scoring[['s_price', 's_mile', 's_year', 's_engine', 's_accident', 's_title']].values
                 df_scoring['Skor Akhir AHP'] = np.dot(score_matrix, bobot_prioritas)
                 
-                hasil_akhir = df_scoring.sort_values(by='Skor Akhir AHP', ascending=False).head(100)
+                hasil_akhir = df_scoring.sort_values(by='Skor Akhir AHP', ascending=False).head(50)
                 kolom_akhir = ['brand', 'model', 'model_year', 'price', 'milage', 'Skor Akhir AHP']
                 st.dataframe(hasil_akhir[kolom_akhir].style.format({'Skor Akhir AHP': '{:.4f}'}), use_container_width=True)
                 
