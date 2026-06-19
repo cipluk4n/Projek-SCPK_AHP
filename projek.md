@@ -13,3 +13,13 @@ Boleh pakai matplotlib, seaborn, dll
 4. Tombol eksekusi: memulai proses perhitungan SPK (st.button)
    - menampilkan keseluruhan proses perhitungan
 5. Menampilkan tabel hasil akhir di-sorting dari yang tertinggi (1st) ke terendah
+
+# Hard Filter
+Brand, Model, Fuel Type, Engine Type, Transmission, Exterior Color, Interior Color
+
+# AHP
+- Model Year (benefit): more big number = more new
+- Milage (cost): more big number = more used
+- Accident History (benefit): if 1 is None Reporter, else 0.01 is others  -> not using 0 because dont want to break alternatif calculation 
+- Clean Title (benefit): if 1 is Yes, else 0.01 is No
+- Price (cost): more price = more money
