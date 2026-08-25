@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 import time
 
-#test nama config local
+#test nama config local dan email gak diubah
 
 st.set_page_config(page_icon='🗿', page_title='SPK Mobil Bekas | AHP', layout='wide')
 st.title('Pemilihan Mobil Bekas dengan Metode AHP', text_alignment='center')
