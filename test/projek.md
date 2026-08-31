@@ -13,3 +13,5 @@ Boleh pakai matplotlib, seaborn, dll
 4. Tombol eksekusi: memulai proses perhitungan SPK (st.button)
    - menampilkan keseluruhan proses perhitungan
 5. Menampilkan tabel hasil akhir di-sorting dari yang tertinggi (1st) ke terendah
+
+## Test
