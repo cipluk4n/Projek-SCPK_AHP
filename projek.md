@@ -14,4 +14,3 @@ Boleh pakai matplotlib, seaborn, dll
    - menampilkan keseluruhan proses perhitungan
 5. Menampilkan tabel hasil akhir di-sorting dari yang tertinggi (1st) ke terendah
 
-## Test
